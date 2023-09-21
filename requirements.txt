@@ -6,3 +6,6 @@ torchvision
 torchaudio
 transformers
 timm
+torchmetrics
+pycocotools
+lxml
