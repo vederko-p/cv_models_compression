@@ -183,8 +183,10 @@ def evaluate_over_voc(
     val_images: List[str],
     model: torch.nn.Module,
     proc: DetrImageProcessor,
+    device: str = None,
 ) -> Tuple[dict, float]:
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    if device is None:
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model.eval()
     model.to(device)
     map = MeanAveragePrecision(iou_type='bbox')
