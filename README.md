@@ -11,6 +11,7 @@
 ## Evaluation
 
 GPU: NVIDIA GeForce RTX 3050 4096 MiB
+
 ONNXDQ_CPU: only 100 images
 
 | Compression                   | Map    | Map_50 | Map_75 | FPS | Size, MB |
