@@ -22,3 +22,10 @@ ONNXDQ_CPU: only 100 images
 | Prunning: Random Unstructured | 0.3023 | 0.4269 | 0.3252 | 11  | 158.404  |
 | Prunning: L1 Unstructured     | 0.5607 | 0.7275 | 0.6069 | 11  | 158.404  |
 | Prunning: Ln Unstructured     | 0.1291 | 0.2739 | 0.1131 | 11  | 158.404  |
+
+Distillation with ResNet50 and Resnet18 as backbones and FasterRCNN as detector:
+
+| Model    | Map    | Map_50 | Map_75 | FPS  | Size, MB | Params, amount |
+|:---------|:-------|:-------|:-------|:-----|:---------|:---------------|
+| ResNet50 | 0.2845 | 0.4204 | 0.3209 | 9.9  | 97.29    | 25,503,912     |
+| ResNet18 | 0.0793 | 0.1658 | 0.0659 | 9.61 | 74.067   | 19,416,256     |

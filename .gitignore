@@ -1,2 +1,4 @@
 .idea/
 **/__pycache__
+evaluation/lightning_logs
+evaluation/resnet_18_distilation_checkpoints
