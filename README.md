@@ -29,3 +29,10 @@ Distillation with ResNet50 and Resnet18 as backbones and FasterRCNN as detector:
 |:---------|:-------|:-------|:-------|:-----|:---------|:---------------|
 | ResNet50 | 0.2845 | 0.4204 | 0.3209 | 9.9  | 97.29    | 25,503,912     |
 | ResNet18 | 0.0793 | 0.1658 | 0.0659 | 9.61 | 74.067   | 19,416,256     |
+
+Weight sharing or clusterization by KMeans
+
+| Compression                   | Map    | Map_50 | Map_75 | FPS | Size, MB |
+|:------------------------------|:-------|:-------|:-------|:----|:---------|
+| None                          | 0.5615 | 0.7284 | 0.6085 | 11  | 158.404  |
+| Clustered model               | 0.4856 | 0.6441 | 0.5257 | 11  | 158.99   |
