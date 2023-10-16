@@ -223,3 +223,111 @@ def model_size(model):
         p.numel() * p.element_size()
         for p in model.parameters()
     ) / 1024**2
+
+
+# ONNX and OpenVino utils
+
+class MyOutput():
+    def __init__(self, logits, pred_boxes):
+        self.logits = torch.from_numpy(logits)
+        self.pred_boxes = torch.from_numpy(pred_boxes)
+
+
+def evaluate_over_voc_onnx(
+        images_path: str,
+        annots_path: str,
+        val_images: List[str],
+        model: torch.nn.Module,
+        proc: DetrImageProcessor,
+        torch_model: torch.nn.Module
+) -> Tuple[dict, float]:
+    map = MeanAveragePrecision(iou_type='bbox')
+    eval_time_sec = []
+    for img_name in tqdm(val_images, total=len(val_images)):
+
+        img_p = os.path.join(images_path, f'{img_name}.jpg')
+        annot_p = os.path.join(annots_path, f'{img_name}.xml')
+        val_img = utils.read_image_rgb(img_p)
+        val_annot = utils.parse_objects(utils.read_xml(annot_p))
+
+        coef_h, coef_w = [800, 1137] / np.array(val_img.shape[:2])
+        val_img = cv2.resize(val_img, (1137, 800),
+                             interpolation=cv2.INTER_LINEAR)
+        inputs = proc(images=val_img, return_tensors=None)
+
+        st = time.time()
+        outputs = model.run(None, {
+            ort_session.get_inputs()[0].name: inputs.pixel_values})
+        et = time.time()
+        eval_time_sec.append(et - st)
+
+        target_sizes = torch.tensor([val_img.shape[:-1]])
+        outputs = MyOutput(outputs[0], outputs[1])
+        results = \
+        proc.post_process_object_detection(outputs, target_sizes=target_sizes,
+                                           threshold=0.9)[0]
+
+        preds = [utils.results2pred(results, torch_model.config.id2label)]
+        targets = [utils.voc_objects2target(val_annot)]
+
+        if len(preds[0]['boxes']) > 0:
+            boxes = torch.round(torch.hstack([
+                preds[0]['boxes'][:, [0]] / coef_w,
+                preds[0]['boxes'][:, [1]] / coef_h,
+                preds[0]['boxes'][:, [2]] / coef_w,
+                preds[0]['boxes'][:, [3]] / coef_h,
+            ]))
+            preds[0]['boxes'] = boxes
+
+        map.update(preds, targets)
+
+    return map.compute(), round(sum(eval_time_sec) / len(eval_time_sec), 3)
+
+
+def evaluate_over_voc_ov(
+        images_path: str,
+        annots_path: str,
+        val_images: List[str],
+        model: torch.nn.Module,
+        proc: DetrImageProcessor,
+        torch_model: torch.nn.Module
+) -> Tuple[dict, float]:
+    map = MeanAveragePrecision(iou_type='bbox')
+    eval_time_sec = []
+    for img_name in tqdm(val_images, total=len(val_images)):
+        img_p = os.path.join(images_path, f'{img_name}.jpg')
+        annot_p = os.path.join(annots_path, f'{img_name}.xml')
+        val_img = utils.read_image_rgb(img_p)
+        val_annot = utils.parse_objects(utils.read_xml(annot_p))
+
+        coef_h, coef_w = [800, 1137] / np.array(val_img.shape[:2])
+        val_img = cv2.resize(val_img, (1137, 800),
+                             interpolation=cv2.INTER_LINEAR)
+        inputs = proc(images=val_img, return_tensors=None)
+
+        st = time.time()
+        outputs = model(inputs.pixel_values)
+        et = time.time()
+        eval_time_sec.append(et - st)
+
+        target_sizes = torch.tensor([val_img.shape[:-1]])
+        outputs = MyOutput(outputs[compiled_model.output(0)],
+                           outputs[compiled_model.output(1)])
+        results = \
+        proc.post_process_object_detection(outputs, target_sizes=target_sizes,
+                                           threshold=0.9)[0]
+        preds = [utils.results2pred(results, torch_model.config.id2label)]
+        targets = [utils.voc_objects2target(val_annot)]
+
+        if len(preds[0]['boxes']) > 0:
+            boxes = torch.round(torch.hstack([
+                preds[0]['boxes'][:, [0]] / coef_w,
+                preds[0]['boxes'][:, [1]] / coef_h,
+                preds[0]['boxes'][:, [2]] / coef_w,
+                preds[0]['boxes'][:, [3]] / coef_h,
+            ]))
+            preds[0]['boxes'] = boxes
+
+        map.update(preds, targets)
+
+    return map.compute(), round(sum(eval_time_sec) / len(eval_time_sec), 3)
